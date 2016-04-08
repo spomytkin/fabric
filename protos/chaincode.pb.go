@@ -46,32 +46,24 @@ const (
 	ChaincodeSpec_UNDEFINED ChaincodeSpec_Type = 0
 	ChaincodeSpec_GOLANG    ChaincodeSpec_Type = 1
 	ChaincodeSpec_NODE      ChaincodeSpec_Type = 2
-<<<<<<< 803e594489dcd011970d168403ee328be0b3da3a
 	ChaincodeSpec_CAR       ChaincodeSpec_Type = 3
-=======
-	ChaincodeSpec_JAVA      ChaincodeSpec_Type = 3
->>>>>>> Prepares the peer to deploy Java-based chaincodes
+	ChaincodeSpec_JAVA      ChaincodeSpec_Type = 4
+// Prepares the peer to deploy Java-based chaincodes
 )
 
 var ChaincodeSpec_Type_name = map[int32]string{
 	0: "UNDEFINED",
 	1: "GOLANG",
 	2: "NODE",
-<<<<<<< 803e594489dcd011970d168403ee328be0b3da3a
 	3: "CAR",
-=======
-	3: "JAVA",
->>>>>>> Prepares the peer to deploy Java-based chaincodes
+	4: "JAVA",
 }
 var ChaincodeSpec_Type_value = map[string]int32{
 	"UNDEFINED": 0,
 	"GOLANG":    1,
 	"NODE":      2,
-<<<<<<< 803e594489dcd011970d168403ee328be0b3da3a
 	"CAR":       3,
-=======
-	"JAVA":      3,
->>>>>>> Prepares the peer to deploy Java-based chaincodes
+	"JAVA":      4,
 }
 
 func (x ChaincodeSpec_Type) String() string {

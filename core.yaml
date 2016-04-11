@@ -288,7 +288,7 @@ chaincode:
 
         # This is the basis for the Java Dockerfile
         Dockerfile:  |
-            from openblockchain/javashim
+            from openblockchain/baseimage
 
     # timeout in millisecs for starting up a container and waiting for Register
     # to come through. 1sec should be plenty for chaincode unit tests

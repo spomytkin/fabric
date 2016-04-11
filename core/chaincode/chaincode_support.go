@@ -250,7 +250,7 @@ func (chaincodeSupport *ChaincodeSupport) getArgsAndEnv(cID *pb.ChaincodeID, cLa
 	case pb.ChaincodeSpec_JAVA:
 		//TODO add security args
 		args = strings.Split(
-			fmt.Sprintf("/usr/bin/gradle run -PappArgs=[\"-a\",\"%s\",\"-i\",\"%s\"]" +
+			fmt.Sprintf("/usr/bin/gradle run -p /root -PappArgs=[\"-a\",\"%s\",\"-i\",\"%s\"]" +
 				" -x compileJava -x processResources -x classes", viper.GetString("peer.address"), cID.Name),
 			" ")
 		chaincodeLog.Debug("Executable is gradle run on chaincode ID %s", cID.Name)

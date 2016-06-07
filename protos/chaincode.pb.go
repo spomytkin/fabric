@@ -54,23 +54,15 @@ var ChaincodeSpec_Type_name = map[int32]string{
 	0: "UNDEFINED",
 	1: "GOLANG",
 	2: "NODE",
-<<<<<<< HEAD
 	3: "CAR",
 	4: "JAVA",
-=======
-	3: "JAVA",
->>>>>>> 850eafc8cbf10ac2d913a7bc076ffa7f7a23cd24
 }
 var ChaincodeSpec_Type_value = map[string]int32{
 	"UNDEFINED": 0,
 	"GOLANG":    1,
 	"NODE":      2,
-<<<<<<< HEAD
 	"CAR":       3,
 	"JAVA":      4,
-=======
-	"JAVA":      3,
->>>>>>> 850eafc8cbf10ac2d913a7bc076ffa7f7a23cd24
 }
 
 func (x ChaincodeSpec_Type) String() string {

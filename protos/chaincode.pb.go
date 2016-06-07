@@ -48,7 +48,6 @@ const (
 	ChaincodeSpec_NODE      ChaincodeSpec_Type = 2
 	ChaincodeSpec_CAR       ChaincodeSpec_Type = 3
 	ChaincodeSpec_JAVA      ChaincodeSpec_Type = 4
-// Prepares the peer to deploy Java-based chaincodes
 )
 
 var ChaincodeSpec_Type_name = map[int32]string{

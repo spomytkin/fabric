@@ -32,23 +32,21 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/x509"
-	"google/protobuf"
+	google_protobuf "google/protobuf"
 	"path/filepath"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric/core/crypto/utils"
+	"github.com/hyperledger/fabric/core/crypto/primitives"
 	"github.com/hyperledger/fabric/core/util"
+	membersrvc "github.com/hyperledger/fabric/membersrvc/protos"
 
 	_ "fmt"
-
-	"github.com/hyperledger/fabric/core/crypto/primitives"
-	membersrvc "github.com/hyperledger/fabric/membersrvc/protos"
 )
 
 var (
-	eca_s   *ECA
-	tlsca_s *TLSCA
-	srv     *grpc.Server
+	ecaS   *ECA
+	tlscaS *TLSCA
+	srv    *grpc.Server
 )
 
 func TestTLS(t *testing.T) {
@@ -67,8 +65,8 @@ func TestTLS(t *testing.T) {
 func startTLSCA(t *testing.T) {
 	LogInit(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr, os.Stdout)
 
-	eca_s = NewECA()
-	tlsca_s = NewTLSCA(eca_s)
+	ecaS = NewECA()
+	tlscaS = NewTLSCA(ecaS)
 
 	var opts []grpc.ServerOption
 	creds, err := credentials.NewServerTLSFromFile(viper.GetString("server.tls.certfile"), viper.GetString("server.tls.keyfile"))
@@ -81,8 +79,8 @@ func startTLSCA(t *testing.T) {
 
 	srv = grpc.NewServer(opts...)
 
-	eca_s.Start(srv)
-	tlsca_s.Start(srv)
+	ecaS.Start(srv)
+	tlscaS.Start(srv)
 
 	sock, err := net.Listen("tcp", viper.GetString("server.port"))
 	if err != nil {
@@ -126,7 +124,7 @@ func requestTLSCertificate(t *testing.T) {
 
 	pubraw, _ := x509.MarshalPKIXPublicKey(&priv.PublicKey)
 	now := time.Now()
-	timestamp := google_protobuf.Timestamp{int64(now.Second()), int32(now.Nanosecond())}
+	timestamp := google_protobuf.Timestamp{Seconds: int64(now.Second()), Nanos: int32(now.Nanosecond())}
 
 	req := &membersrvc.TLSCertCreateReq{
 		&timestamp,
@@ -164,7 +162,7 @@ func stopTLSCA(t *testing.T) {
 }
 
 func storePrivateKeyInClear(alias string, privateKey interface{}, t *testing.T) {
-	rawKey, err := utils.PrivateKeyToPEM(privateKey, nil)
+	rawKey, err := primitives.PrivateKeyToPEM(privateKey, nil)
 	if err != nil {
 		t.Logf("Failed converting private key to PEM [%s]: [%s]", alias, err)
 		t.Fail()
@@ -178,7 +176,7 @@ func storePrivateKeyInClear(alias string, privateKey interface{}, t *testing.T) 
 }
 
 func storeCert(alias string, der []byte, t *testing.T) {
-	err := ioutil.WriteFile(filepath.Join(".membersrvc/", alias), utils.DERCertToPEM(der), 0700)
+	err := ioutil.WriteFile(filepath.Join(".membersrvc/", alias), primitives.DERCertToPEM(der), 0700)
 	if err != nil {
 		t.Logf("Failed storing certificate [%s]: [%s]", alias, err)
 		t.Fail()

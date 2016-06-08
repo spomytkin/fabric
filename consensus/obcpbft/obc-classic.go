@@ -27,7 +27,7 @@ import (
 )
 
 type obcClassic struct {
-	obcGeneric
+	legacyGenericShim
 
 	persistForward
 
@@ -36,14 +36,15 @@ type obcClassic struct {
 
 func newObcClassic(id uint64, config *viper.Viper, stack consensus.Stack) *obcClassic {
 	op := &obcClassic{
-		obcGeneric: obcGeneric{stack: stack},
+		legacyGenericShim: legacyGenericShim{
+			obcGeneric: &obcGeneric{stack: stack},
+		},
 	}
 
 	op.persistForward.persistor = stack
 
 	logger.Debug("Replica %d obtaining startup information", id)
-
-	op.pbft = newPbftCore(id, config, op)
+	op.legacyGenericShim.init(id, config, op)
 
 	op.idleChan = make(chan struct{})
 	close(op.idleChan)
@@ -79,11 +80,6 @@ func (op *obcClassic) RecvMsg(ocMsg *pb.Message, senderHandle *pb.PeerID) error 
 	op.pbft.receive(ocMsg.Payload, senderID)
 
 	return nil
-}
-
-// Close tells us to release resources we are holding
-func (op *obcClassic) Close() {
-	op.pbft.close()
 }
 
 // =============================================================================
@@ -169,4 +165,14 @@ func (op *obcClassic) main() {
 // Retrieve the idle channel, only used for testing (and in this case, the channel is always closed)
 func (op *obcClassic) idleChannel() <-chan struct{} {
 	return op.idleChan
+}
+
+// StateUpdated is a signal from the stack that it has fast-forwarded its state
+func (op *obcClassic) StateUpdated(seqNo uint64, id []byte) {
+	op.pbft.stateUpdated(seqNo, id)
+}
+
+// StateUpdating is a signal from the stack that state transfer has started
+func (op *obcClassic) StateUpdating(seqNo uint64, id []byte) {
+	op.pbft.stateUpdating(seqNo, id)
 }

@@ -83,38 +83,38 @@ func TestValidityPeriod(t *testing.T) {
 	time.Sleep(time.Second * 240)
 
 	// 2. Obtain the validity period by querying and directly from the ledger
-	validityPeriod_A := queryValidityPeriod(t)
-	validityPeriodFromLedger_A := getValidityPeriodFromLedger(t)
+	validityPeriodA := queryValidityPeriod(t)
+	validityPeriodFromLedgerA := getValidityPeriodFromLedger(t)
 
 	// 3. Wait for the validity period to be updated...
 	time.Sleep(time.Second * 40)
 
 	// ... and read the values again
-	validityPeriod_B := queryValidityPeriod(t)
-	validityPeriodFromLedger_B := getValidityPeriodFromLedger(t)
+	validityPeriodB := queryValidityPeriod(t)
+	validityPeriodFromLedgerB := getValidityPeriodFromLedger(t)
 
 	// 5. Stop TCA and Openchain
 	stopServices(t)
 
 	// 6. Compare the values
-	if validityPeriod_A != validityPeriodFromLedger_A {
-		t.Logf("Validity period read from ledger must be equals tothe one obtained by querying the Openchain. Expected: %s, Actual: %s", validityPeriod_A, validityPeriodFromLedger_A)
+	if validityPeriodA != validityPeriodFromLedgerA {
+		t.Logf("Validity period read from ledger must be equals tothe one obtained by querying the Openchain. Expected: %d, Actual: %d", validityPeriodA, validityPeriodFromLedgerA)
 		t.Fail()
 	}
 
-	if validityPeriod_B != validityPeriodFromLedger_B {
-		t.Logf("Validity period read from ledger must be equals tothe one obtained by querying the Openchain. Expected: %s, Actual: %s", validityPeriod_B, validityPeriodFromLedger_B)
+	if validityPeriodB != validityPeriodFromLedgerB {
+		t.Logf("Validity period read from ledger must be equals tothe one obtained by querying the Openchain. Expected: %d, Actual: %d", validityPeriodB, validityPeriodFromLedgerB)
 		t.Fail()
 	}
 
-	if validityPeriod_B-validityPeriod_A != updateInterval {
-		t.Logf("Validity period difference must be equal to the update interval. Expected: %s, Actual: %s", updateInterval, validityPeriod_B-validityPeriod_A)
+	if validityPeriodB-validityPeriodA != updateInterval {
+		t.Logf("Validity period difference must be equal to the update interval. Expected: %d, Actual: %d", updateInterval, validityPeriodB-validityPeriodA)
 		t.Fail()
 	}
 
 	// 7. since the validity period is used as time in the validators convert both validity periods to Unix time and compare them
-	vpA := time.Unix(validityPeriodFromLedger_A, 0)
-	vpB := time.Unix(validityPeriodFromLedger_B, 0)
+	vpA := time.Unix(validityPeriodFromLedgerA, 0)
+	vpB := time.Unix(validityPeriodFromLedgerB, 0)
 
 	nextVP := vpA.Add(time.Second * 37)
 	if !vpB.Equal(nextVP) {
@@ -204,13 +204,13 @@ func getValidityPeriodFromLedger(t *testing.T) int64 {
 		t.Fail()
 	}
 
-	vp_bytes, err := ledger.GetState(cid, "system.validity.period", true)
+	vpBytes, err := ledger.GetState(cid, "system.validity.period", true)
 	if err != nil {
 		t.Logf("Failed reading validity period from the ledger: %s", err)
 		t.Fail()
 	}
 
-	i, err := strconv.ParseInt(string(vp_bytes[:]), 10, 64)
+	i, err := strconv.ParseInt(string(vpBytes[:]), 10, 64)
 	if err != nil {
 		t.Logf("Failed to parse validity period: %s", err)
 		t.Fail()
@@ -250,7 +250,7 @@ func queryChaincode(chaincodeInvSpec *pb.ChaincodeInvocationSpec, t *testing.T) 
 		return nil, fmt.Errorf("Error invoking validity period update system chaincode: %s", err)
 	}
 
-	t.Logf("Successfully invoked validity period update: %s(%s)", chaincodeInvSpec, string(resp.Msg))
+	t.Logf("Successfully invoked validity period update: %v(%s)", chaincodeInvSpec, string(resp.Msg))
 
 	return resp, nil
 }
@@ -341,12 +341,14 @@ func startOpenchain(t *testing.T) error {
 		return secHelper
 	}
 
+	discInstance := core.NewStaticDiscovery(viper.GetString("peer.discovery.rootnode"))
+
 	if viper.GetBool("peer.validator.enabled") {
 		t.Logf("Running as validating peer - installing consensus %s", viper.GetString("peer.validator.consensus"))
-		peerServer, _ = peer.NewPeerWithHandler(secHelperFunc, helper.NewConsensusHandler)
+		peerServer, _ = peer.NewPeerWithHandler(secHelperFunc, helper.NewConsensusHandler, discInstance)
 	} else {
 		t.Log("Running as non-validating peer")
-		peerServer, _ = peer.NewPeerWithHandler(secHelperFunc, peer.NewPeerHandler)
+		peerServer, _ = peer.NewPeerWithHandler(secHelperFunc, peer.NewPeerHandler, discInstance)
 	}
 	pb.RegisterPeerServer(grpcServer, peerServer)
 
@@ -373,12 +375,12 @@ func startOpenchain(t *testing.T) error {
 	// Create and register the REST service
 	go rest.StartOpenchainRESTServer(serverOpenchain, serverDevops)
 
-	rootNode, err := core.GetRootNode()
+	rootNode := discInstance.GetRootNodes()
 	if err != nil {
-		grpclog.Fatalf("Failed to get peer.discovery.rootnode valey: %s", err)
+		grpclog.Fatalf("Failed to get peer.discovery.rootnode value: %s", err)
 	}
 
-	t.Logf("Starting peer with id=%s, network id=%s, address=%s, discovery.rootnode=%s, validator=%v",
+	t.Logf("Starting peer with id=%s, network id=%s, address=%s, discovery.rootnode=%v, validator=%v",
 		peerEndpoint.ID, viper.GetString("peer.networkId"),
 		peerEndpoint.Address, rootNode, viper.GetBool("peer.validator.enabled"))
 
@@ -407,7 +409,7 @@ func startOpenchain(t *testing.T) error {
 func stopOpenchain(t *testing.T) {
 	clientConn, err := peer.NewPeerClientConnection()
 	if err != nil {
-		t.Log(fmt.Errorf("Error trying to connect to local peer:", err))
+		t.Log(fmt.Errorf("Error trying to connect to local peer: %v", err))
 		t.Fail()
 	}
 
@@ -415,8 +417,11 @@ func stopOpenchain(t *testing.T) {
 	serverClient := pb.NewAdminClient(clientConn)
 
 	status, err := serverClient.StopServer(context.Background(), &google_protobuf.Empty{})
+	if err != nil {
+		t.Logf("Failed to stop: %v", err)
+		t.Fail()
+	}
 	t.Logf("Current status: %s", status)
-
 }
 
 func registerChaincodeSupport(chainname chaincode.ChainName, grpcServer *grpc.Server, secHelper crypto.Peer) {
